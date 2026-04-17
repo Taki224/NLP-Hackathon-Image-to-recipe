@@ -13,3 +13,4 @@ wheels/
 data/images/
 # Large local-only datasets
 data/RAW_recipes.csv
+recipe_index*
