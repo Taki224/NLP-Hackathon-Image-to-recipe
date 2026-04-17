@@ -19,6 +19,8 @@
 - [ ] Experiment with full Food.com corpus in the index (180k recipes)
 - [ ] Try larger adapter bottleneck (256 → 512) and compare results
 - [ ] Experiment with unfreezing last few CLIP transformer blocks for deeper fine-tuning
+- [ ] Broaden recipe matching to search ingredients column, not just recipe title
+- [ ] Assign 3–5 recipes per image for 75k training to reduce duplication
 
 ### Evaluation
 - [ ] Formal Recall@1, @3, @5 on Food101 test split (25k unseen images)
