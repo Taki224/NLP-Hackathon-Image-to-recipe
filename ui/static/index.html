@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dish to Recipe</title>
+  <style>
+    /* ── Layout ── */
+    body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; background: #fafafa; }
+    h1   { text-align: center; color: #333; }
+
+    /* ── Upload box ── */
+    #drop-zone {
+      border: 2px dashed #aaa; border-radius: 12px;
+      padding: 40px; text-align: center; cursor: pointer;
+      color: #888; transition: background 0.2s;
+    }
+    #drop-zone.hover { background: #eef; border-color: #66f; }
+    #file-input { display: none; }
+
+    /* ── Preview ── */
+    #preview { display: none; text-align: center; margin: 20px 0; }
+    #preview img { max-height: 280px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+
+    /* ── Button ── */
+    #submit-btn {
+      display: none; width: 100%; padding: 14px;
+      background: #e85d04; color: white; border: none;
+      border-radius: 8px; font-size: 1.1rem; cursor: pointer;
+    }
+    #submit-btn:hover { background: #c44d00; }
+
+    /* ── Loading spinner ── */
+    #loading { display: none; text-align: center; margin: 20px 0; color: #888; }
+
+    /* ── Recipe cards ── */
+    #results { margin-top: 30px; }
+    .card {
+      background: white; border-radius: 10px; padding: 18px 22px;
+      margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      border-left: 5px solid #e85d04;
+    }
+    .card h3 { margin: 0 0 6px; color: #222; }
+    .card .score { font-size: 0.85rem; color: #999; margin-bottom: 10px; }
+    .card ul { margin: 0; padding-left: 18px; color: #555; }
+    .card ul li { margin-bottom: 3px; }
+  </style>
+</head>
+<body>
+
+  <h1>🍽️ Dish to Recipe</h1>
+  <p style="text-align:center; color:#777">Upload a photo of a dish — get the top 3 matching recipes instantly.</p>
+
+  <!-- Step 1: Upload -->
+  <div id="drop-zone">
+    <p>Drag & drop a food photo here<br/>or <strong>click to browse</strong></p>
+    <input type="file" id="file-input" accept="image/*" />
+  </div>
+
+  <!-- Step 2: Preview -->
+  <div id="preview">
+    <img id="preview-img" src="" alt="preview" />
+  </div>
+
+  <!-- Step 3: Submit -->
+  <button id="submit-btn">Find Recipes</button>
+
+  <!-- Loading indicator -->
+  <div id="loading">Searching recipes…</div>
+
+  <!-- Step 4: Results -->
+  <div id="results"></div>
+
+  <script>
+    const dropZone   = document.getElementById('drop-zone');
+    const fileInput  = document.getElementById('file-input');
+    const preview    = document.getElementById('preview');
+    const previewImg = document.getElementById('preview-img');
+    const submitBtn  = document.getElementById('submit-btn');
+    const loading    = document.getElementById('loading');
+    const results    = document.getElementById('results');
+
+    let selectedFile = null;
+
+    // Open file picker on click
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // Highlight on drag-over
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('hover'); });
+    dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('hover'));
+
+    // Handle dropped file
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('hover');
+      handleFile(e.dataTransfer.files[0]);
+    });
+
+    // Handle file-picker selection
+    fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+    function handleFile(file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      selectedFile = file;
+
+      // Show preview
+      previewImg.src = URL.createObjectURL(file);
+      preview.style.display  = 'block';
+      submitBtn.style.display = 'block';
+      results.innerHTML = '';
+    }
+
+    // Send image to backend
+    submitBtn.addEventListener('click', async () => {
+      if (!selectedFile) return;
+
+      submitBtn.style.display = 'none';
+      loading.style.display   = 'block';
+      results.innerHTML       = '';
+
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+
+      try {
+        const response = await fetch('/retrieve', { method: 'POST', body: formData });
+        const recipes  = await response.json();
+        displayResults(recipes);
+      } catch (err) {
+        results.innerHTML = '<p style="color:red">Something went wrong. Please try again.</p>';
+      } finally {
+        loading.style.display   = 'none';
+        submitBtn.style.display = 'block';
+      }
+    });
+
+    function displayResults(recipes) {
+      results.innerHTML = '<h2 style="color:#333">Top Matches</h2>';
+      recipes.forEach(r => {
+        const ingredientItems = r.ingredients.map(i => `<li>${i}</li>`).join('');
+        results.innerHTML += `
+          <div class="card">
+            <h3>#${r.rank} — ${r.recipe_name}</h3>
+            <div class="score">Similarity score: ${(r.score * 100).toFixed(0)}%</div>
+            <strong>Ingredients:</strong>
+            <ul>${ingredientItems}</ul>
+          </div>`;
+      });
+    }
+  </script>
+</body>
+</html>
