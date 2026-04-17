@@ -9,8 +9,5 @@ wheels/
 # Virtual environments
 .venv
 
-# Data images
-data/images/
-# Large local-only datasets
-data/RAW_recipes.csv
+# indexed recipes
 recipe_index*
