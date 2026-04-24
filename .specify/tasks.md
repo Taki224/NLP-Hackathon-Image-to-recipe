@@ -13,6 +13,14 @@
 - [ ] Deduplicate matched recipes per image using a `seen_recipe_ids` set, so the same recipe is not assigned to the same image twice even if it matches on both title and ingredients.
 - [ ] Format the text output for each recipe to include *only* the Title and Ingredients, deliberately excluding the instructions to fit within CLIP's 77-token limit.
 
+### 1.2.1 CLIP Text-to-Text Ranking Filter (Post-Keyword-Search)
+- [ ] Generate or define canonical category descriptions for each food category in the dataset (e.g., "a dish of chocolate cake, showing its typical appearance and ingredients").
+- [ ] After keyword search returns candidate recipes, encode the canonical description using CLIP's text encoder.
+- [ ] Score each candidate recipe text (title + ingredients) against the canonical description using CLIP text encoder and compute cosine similarity.
+- [ ] Implement a hard filter that immediately rejects recipes with titles containing exclusionary words (e.g., "frosting", "glaze", "sauce") for categories where these don't belong.
+- [ ] Rank candidates by text-to-text similarity and keep only the top 5 per category; discard the rest.
+- [ ] Log which recipes were filtered out per category to validate the hard filter is working as intended.
+
 ### 1.3 Exporting & Reporting
 - [ ] Process `train` and `val` folders independently and save them to separate JSON files (`paired_dataset_train.json` and `paired_dataset_val.json`).
 - [ ] Add a reporting step to display categories that returned 0 or very few (e.g., <20) recipe matches to allow for manual investigation and keyword adjustments.
@@ -28,6 +36,7 @@
 ### 2.2 Model Architecture Experiments
 - [ ] Investigate and try swapping standard CLIP for Long-CLIP to natively support a larger text token window (allowing full recipes including instructions).
 - [ ] Experiment with unfreezing the last few layers of the base CLIP model (image and text encoders) alongside the adapter layers to improve domain-specific accuracy.
+- [ ] Experiment with generating hard positive and negative pairs for training to improve model discrimination between similar dishes (e.g., Goulash vs Mediterranean soup).
 
 ### 2.3 Training Loop & Metrics
 - [ ] Add a `model.eval()` validation loop at the end of each training epoch to compute the validation InfoNCE loss.

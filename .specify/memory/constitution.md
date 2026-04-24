@@ -1,50 +1,43 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+- Version change: none → 1.0.0
+- List of modified principles:
+  - Added: I. Notebook-First & Simplicity
+  - Added: II. Resumable Training
+  - Added: III. Sensible Retrieval as the Single Acceptance Gate
+  - Added: IV. Retain All Experiment Iterations
+- Added sections: Technology Constraints, Acceptance Criteria
+- Removed sections: N/A
+- Templates requiring updates:
+  - .specify/templates/plan-template.md (TODO)
+  - .specify/templates/spec-template.md (TODO)
+  - .specify/templates/tasks-template.md (TODO)
+- Follow-up TODOs: None
+-->
+# NLP Cross-Modal Food Retrieval System Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Notebook-First & Simplicity
+All core development MUST remain simple and runnable in Jupyter notebooks. There MUST be no premature productionization. Code should be straightforward enough for a university NLP course without operational bloat.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Resumable Training
+Training MUST be resumable from checkpoints without losing state. Given the nature of ML experiments, checkpoint mechanisms MUST be robust to prevent lost time.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Sensible Retrieval as the Single Acceptance Gate
+The single acceptance gate for success is: does `retrieve(image)` return sensible recipes for a test photo? Complex automated test suites are less important than this core qualitative requirement.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Retain All Experiment Iterations
+Every separate experiment, try, or iteration MUST be saved. This is critical so that performance can be effectively compared across different model architectures or hyperparameter sets later.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+## Technology Constraints
+Do not add complex infrastructure overhead (Docker swarms, microservices, etc.). Rely purely on Jupyter notebooks and basic Python scripts that are easily executable in standard data science environments.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
-
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Acceptance Criteria
+When validating new code or models, the developer MUST run the `retrieve(image)` function with a valid dish photo and subjectively verify that the matched recipes are sensible.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+This constitution sets the expectations for all course project work.
+Amendments should focus on simplifying the codebase and maintaining purely research-focused workflows. 
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-04-24 | **Last Amended**: 2026-04-24

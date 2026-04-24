@@ -52,3 +52,18 @@ The primary issue with using a post-model adapter for recipe matching is informa
 
 ## 7. Dataset Acquisition Challenges
 - **ISIA Food-500 server is extremely slow:** Download speeds maxed out at ~400 KB/s on a massive 43GB dataset, accompanied by frequent connection drops mid-download.
+
+## 8. Noisy Keyword Search Results
+
+**The Problem:**
+The keyword search returns a noisy pool of recipe candidates per category — some don't actually represent the dish. For example, frosting recipes match to "chocolate cake", and sauce recipes match to "pasta". Since your training pairs come from this keyword search pool, bad matches mean the contrastive loss is trained on false positives, which corrupts the embedding space and degrades model discrimination.
+
+**The Solution:**
+After keyword search, run a CLIP text-to-text ranking step as a post-processing filter in the data creation pipeline:
+
+1. **Canonical Category Descriptions:** For each category, create a brief description (e.g., "a dish of chocolate cake, showing its typical appearance and ingredients").
+2. **CLIP Text Ranking:** Score each candidate recipe against the canonical description using CLIP's text encoder only (via cosine similarity).
+3. **Hard Filter:** Immediately reject recipes whose titles contain exclusionary words (e.g., "frosting", "glaze", "sauce") when those ingredients don't belong to the category.
+4. **Top-K Selection:** Keep only the top 5 candidates by text-to-text cosine similarity and discard the rest.
+
+This requires no images, runs fast on the L40S, and fits directly into `data_creator.ipynb` as a post-processing step after existing keyword search.
