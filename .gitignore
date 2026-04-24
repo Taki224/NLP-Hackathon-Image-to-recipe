@@ -11,3 +11,6 @@ wheels/
 
 # indexed recipes
 recipe_index*
+
+# data
+data/
