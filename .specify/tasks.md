@@ -3,7 +3,7 @@
 ## 1. Create new Training Data script (`notebooks/phase2/data_creator.ipynb`)
 
 ### 1.1 Data Loading & Setup
-- [ ] Parse `data/datasets/final_dataset/train` and `data/datasets/final_dataset/val` folders instead of Food101 from Hugging Face since the dataset is already split ~80/20.
+- [ ] Parse `data/datasets/combined_dataset` folder (merged training and validation data).
 - [ ] Load the new 2M recipe dataset from `data/datasets/recipe_dataset_2m.csv` instead of RAW_recipes.csv.
 
 ### 1.2 Recipe Matching & Formatting
@@ -11,37 +11,49 @@
 - [ ] Broaden the recipe search beyond title-only matching to also search the ingredients column (recipes without keywords in the title but in ingredients should match).
 - [ ] Assign 3–5 matching recipes per image instead of 1 (creates 3-5 positive pairs per image instead of 1).
 - [ ] Deduplicate matched recipes per image using a `seen_recipe_ids` set, so the same recipe is not assigned to the same image twice even if it matches on both title and ingredients.
-- [ ] Format the text output for each recipe to include *only* the Title and Ingredients, deliberately excluding the instructions to fit within CLIP's 77-token limit.
+- [ ] Format the text output for each recipe to include Title, Ingredients, and Instructions (full recipe text) - LongCLIP supports larger token windows.
 
-### 1.2.1 CLIP Text-to-Text Ranking Filter (Post-Keyword-Search)
+### 1.2.1 LongCLIP Text-to-Text Ranking Filter (Post-Keyword-Search)
 - [ ] Generate or define canonical category descriptions for each food category in the dataset (e.g., "a dish of chocolate cake, showing its typical appearance and ingredients").
-- [ ] After keyword search returns candidate recipes, encode the canonical description using CLIP's text encoder.
-- [ ] Score each candidate recipe text (title + ingredients) against the canonical description using CLIP text encoder and compute cosine similarity.
+- [ ] After keyword search returns candidate recipes, encode the canonical description using LongCLIP's text encoder.
+- [ ] Score each candidate recipe text (full recipe) against the canonical description using LongCLIP text encoder and compute cosine similarity.
 - [ ] Implement a hard filter that immediately rejects recipes with titles containing exclusionary words (e.g., "frosting", "glaze", "sauce") for categories where these don't belong.
 - [ ] Rank candidates by text-to-text similarity and keep only the top 5 per category; discard the rest.
 - [ ] Log which recipes were filtered out per category to validate the hard filter is working as intended.
 
+### 1.2.2 SigLIP Image-Recipe Pair Scoring
+- [ ] Use SigLIP to score each image-recipe pair by encoding the image and recipe text, then computing cosine similarity.
+- [ ] Determine per-category thresholds based on the distribution of similarity scores (e.g., 75th percentile or median).
+- [ ] Filter out pairs that fall below their category's threshold, keeping only high-confidence matches.
+- [ ] Log the threshold values and number of pairs retained per category.
+
+### 1.2.3 Vision-Language LLM Validation
+- [ ] For all pairs retained after SigLIP filtering, use a Vision-Language LLM to re-score and validate the image-recipe match quality.
+- [ ] The VL-LLM should assess whether the recipe is a plausible match for the food shown in the image, considering ingredients, cooking style, and presentation.
+- [ ] Keep pairs that pass the VL-LLM validation; discard those that fail.
+- [ ] Log validation results to understand which pairs the VL-LLM rejected and why.
+
 ### 1.3 Exporting & Reporting
-- [ ] Process `train` and `val` folders independently and save them to separate JSON files (`paired_dataset_train.json` and `paired_dataset_val.json`).
-- [ ] Add a reporting step to display categories that returned 0 or very few (e.g., <20) recipe matches to allow for manual investigation and keyword adjustments.
+- [ ] Process the combined dataset and save high-quality pairs (after SigLIP and VL-LLM filtering) to a single JSON file (`paired_dataset.json`).
+- [ ] Add a reporting step to display categories that have too few pairs (e.g., <20) after filtering to allow for manual investigation and keyword adjustments.
 - [ ] Update dataset final saving logic to reflect the file output changes.
 
 ## 2. Validation and Early Stopping (`notebooks/phase2/train.ipynb`)
 
 ### 2.1 Dataset & Loader Adjustments
-- [ ] Update `FoodRecipeDataset` instantiation to load the new `paired_dataset_train.json` and `paired_dataset_val.json`.
-- [ ] Create separate DataLoaders for training and validation.
-- [ ] Update the `text_adapter` and tokenizer logic to enforce the 77-token limit cleanly, prioritizing the "Title + Ingredients" global/local features.
+- [ ] Update `FoodRecipeDataset` instantiation to load the new `paired_dataset.json`.
+- [ ] Create DataLoader for training on the combined dataset.
+- [ ] Update the `text_adapter` and tokenizer logic to use LongCLIP's tokenizer for full recipe text (Title + Ingredients + Instructions).
 
 ### 2.2 Model Architecture Experiments
-- [ ] Investigate and try swapping standard CLIP for Long-CLIP to natively support a larger text token window (allowing full recipes including instructions).
-- [ ] Experiment with unfreezing the last few layers of the base CLIP model (image and text encoders) alongside the adapter layers to improve domain-specific accuracy.
+- [ ] Use LongCLIP as the base model to support full recipe text (title + ingredients + instructions).
+- [ ] Experiment with unfreezing the last few layers of the LongCLIP model (image and text encoders) alongside the adapter layers to improve domain-specific accuracy.
 - [ ] Experiment with generating hard positive and negative pairs for training to improve model discrimination between similar dishes (e.g., Goulash vs Mediterranean soup).
 
 ### 2.3 Training Loop & Metrics
-- [ ] Add a `model.eval()` validation loop at the end of each training epoch to compute the validation InfoNCE loss.
-- [ ] Modify the checkpointing/early stopping logic to track and stop based on validation loss rather than average training loss.
-- [ ] Log and plot validation loss alongside training loss.
+- [ ] Track and log training loss throughout training.
+- [ ] Save model checkpoints at regular intervals (e.g., every N epochs or when loss improves).
+- [ ] Log and plot training loss progression.
 
 ### 2.4 Post-Training Tasks
 - [ ] After training completes, re-run the Step 10 `retrieve()` sanity check with a few sample images to confirm the new model and updated index produce sensible results before hackathon day.
@@ -64,9 +76,10 @@
 ### 3.3 Testing
 - [ ] Test the updated retrieval function with sample images to verify the new outputs.
 
-## 4. Formal Evaluation
+## 4. Manual Testing & Validation
 
-### 4.1 Benchmark Setup
-- [ ] Run the trained model on the `data/datasets/final_dataset/val` split.
-- [ ] Implement Recall@1, Recall@3, and Recall@5 category-match metrics — since exact recipe matching is noisy, check if the retrieved recipe's raw text contains the category-specific keywords associated with the test image.
-- [ ] Log and report the results as the official benchmark for the model.
+### 4.1 Manual Testing with Known Pairs
+- [ ] Prepare a small set of image-recipe pairs with known correct matches.
+- [ ] Index the recipes from these pairs into the model's retrieval index.
+- [ ] For each test image, retrieve the top results and check if the model successfully finds the known paired recipe(s).
+- [ ] Document which pairs were retrieved correctly and which were missed to identify any failure modes.
