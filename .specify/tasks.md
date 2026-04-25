@@ -13,22 +13,15 @@
 - [ ] Deduplicate matched recipes per image using a `seen_recipe_ids` set, so the same recipe is not assigned to the same image twice even if it matches on both title and ingredients.
 - [ ] Format the text output for each recipe to include Title, Ingredients, and Instructions (full recipe text) - LongCLIP supports larger token windows.
 
-### 1.2.1 LongCLIP Text-to-Text Ranking Filter (Post-Keyword-Search)
-- [ ] Generate or define canonical category descriptions for each food category in the dataset (e.g., "a dish of chocolate cake, showing its typical appearance and ingredients").
-- [ ] After keyword search returns candidate recipes, encode the canonical description using LongCLIP's text encoder.
-- [ ] Score each candidate recipe text (full recipe) against the canonical description using LongCLIP text encoder and compute cosine similarity.
-- [ ] Implement a hard filter that immediately rejects recipes with titles containing exclusionary words (e.g., "frosting", "glaze", "sauce") for categories where these don't belong.
-- [ ] Rank candidates by text-to-text similarity and keep only the top 5 per category; discard the rest.
-- [ ] Log which recipes were filtered out per category to validate the hard filter is working as intended.
-
-### 1.2.2 SigLIP Image-Recipe Pair Scoring
-- [ ] Use SigLIP to score each image-recipe pair by encoding the image and recipe text, then computing cosine similarity.
+### 1.2.1 SigLIP Image-Recipe Pair Scoring
+- [ ] Use SigLIP to score each image-recipe pair by encoding the image and recipe title + top ingridients that fit (not the text because it doesn't fit into SigLIP), then computing cosine similarity.
 - [ ] Determine per-category thresholds based on the distribution of similarity scores (e.g., 75th percentile or median).
+- [ ] Apply global minimum threshold (0.5) first, then per-category top-50% as a secondary rank filter.
 - [ ] Filter out pairs that fall below their category's threshold, keeping only high-confidence matches.
 - [ ] Log the threshold values and number of pairs retained per category.
 
-### 1.2.3 Vision-Language LLM Validation
-- [ ] For all pairs retained after SigLIP filtering, use a Vision-Language LLM to re-score and validate the image-recipe match quality.
+### 1.2.2 Vision-Language LLM Validation
+- [ ] Run VLM validation only on pairs with SigLIP score in the "uncertain" range; auto-accept pairs scoring > 0.65 as they are already high confidence
 - [ ] The VL-LLM should assess whether the recipe is a plausible match for the food shown in the image, considering ingredients, cooking style, and presentation.
 - [ ] Keep pairs that pass the VL-LLM validation; discard those that fail.
 - [ ] Log validation results to understand which pairs the VL-LLM rejected and why.
@@ -37,6 +30,12 @@
 - [ ] Process the combined dataset and save high-quality pairs (after SigLIP and VL-LLM filtering) to a single JSON file (`paired_dataset.json`).
 - [ ] Add a reporting step to display categories that have too few pairs (e.g., <20) after filtering to allow for manual investigation and keyword adjustments.
 - [ ] Update dataset final saving logic to reflect the file output changes.
+
+### 1.4 Metadata Lookup System (Full Recipe Retrieval)
+- [ ] Create a separate `recipe_metadata.json` file mapping `recipe_id → {title, ingredients, instructions}` (full recipe text).
+- [ ] During paired dataset creation, store only recipe IDs and short text (title + ingredients) in `paired_dataset.json` for model indexing.
+- [ ] Ensure `recipe_metadata.json` is loaded and available during retrieval without impacting model inference speed.
+- [ ] Validate that metadata lookup works correctly: given a recipe ID from retrieval results, full recipe text is correctly retrieved.
 
 ## 2. Validation and Early Stopping (`notebooks/phase2/train.ipynb`)
 
@@ -47,6 +46,7 @@
 
 ### 2.2 Model Architecture Experiments
 - [ ] Use LongCLIP as the base model to support full recipe text (title + ingredients + instructions).
+- [ ] Verify full recipe text (title + ingredients + instructions) fits within LongCLIP's 248-token limit; truncate instructions if needed, prioritising title and ingredients
 - [ ] Experiment with unfreezing the last few layers of the LongCLIP model (image and text encoders) alongside the adapter layers to improve domain-specific accuracy.
 - [ ] Experiment with generating hard positive and negative pairs for training to improve model discrimination between similar dishes (e.g., Goulash vs Mediterranean soup).
 
@@ -58,6 +58,9 @@
 ### 2.4 Post-Training Tasks
 - [ ] After training completes, re-run the Step 10 `retrieve()` sanity check with a few sample images to confirm the new model and updated index produce sensible results before hackathon day.
 - [ ] Generate the recipe retrieval `.npy` index for all 2 million recipes after training is complete (batch loading to avoid RAM crashes).
+- [ ] Update `retrieve()` function to accept recipe IDs from index and perform metadata lookup to return full recipe text (title, ingredients, instructions).
+- [ ] Update `/retrieve` API endpoint in `ui/src/app.py` to include full recipe instructions in the JSON response alongside similarity scores.
+- [ ] Update the UI (`ui/static/index.html`) to display full recipe instructions in recipe cards below the ingredients list.
 
 ## 3. Ingredient Confidence Scores (`notebooks/phase3/train.ipynb`)
 
