@@ -11,7 +11,9 @@ dependencies = [
     "open-clip-torch>=3.3.0",
     "pandas>=3.0.2",
     "pillow>=12.2.0",
+    "sentencepiece>=0.2.1",
     "torch>=2.11.0",
     "torchvision>=0.26.0",
     "tqdm>=4.67.3",
+    "transformers>=5.7.0",
 ]

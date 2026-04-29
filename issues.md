@@ -129,3 +129,13 @@ For all pairs that pass SigLIP filtering, use a Vision-Language LLM for final va
 3. **Final Training Data:** The resulting pairs are high-quality and ready for model training.
 
 This three-stage approach ensures that only reliable, multi-model-validated pairs make it into the final training dataset.
+
+## 9. Low Yield of High-Quality Training Pairs
+
+**The Problem:**
+After applying the strict multi-stage filtering (SigLIP threshold > 0.5 + VLM validation), the final dataset yield is fundamentally low. We ended up with exactly 8,160 high-quality pairs across 403 categories, resulting in an average of ~20 pairs per category and a median of just 10.
+
+**The Impact & Solutions:**
+- **Overfitting Risk:** With such a limited amount of training data, unfreezing the base layers of a massive model like LongCLIP will inevitably lead to severe overfitting. 
+- **Lightweight Adapters:** We must abandon unfreezing the base encoders. Instead, we should rely on highly parameter-efficient fine-tuning methods. Exploring a bottleneck MLP adapter (e.g., 512 -> 64 -> 512) or a TIP-Adapter will allow domain adaptation without destroying the base model's existing generalization.
+- **Hard Mining:** Since the overall volume is low, maximizing the signal-to-noise ratio in every batch is paramount. Training with hard negative and hard positive pairs will challenge the model to learn fine-grained discriminative features (like determining Goulash vs. typical Beef Stew) despite the smaller data pool.
