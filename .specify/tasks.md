@@ -49,6 +49,7 @@
 - [ ] Verify full recipe text (title + ingredients + instructions) fits within LongCLIP's 248-token limit; truncate instructions if needed, prioritising title and ingredients
 - [ ] Experiment with lightweight adapter architectures (e.g., a bottleneck MLP like 512 -> 64 -> 512) or a TIP-Adapter to prevent overfitting on the low-volume training data.
 - [ ] Experiment with generating hard positive and negative pairs for training to improve model discrimination between similar dishes (e.g., Goulash vs Mediterranean soup) and maximize learning signal from the small dataset.
+- [ ] Experiment with training on a larger but lower-quality dataset (e.g., bypassing VLM validation or lowering SigLIP thresholds) and unfreezing the last encoder layers to baseline if data volume outperforms data quality.
 
 ### 2.3 Training Loop & Metrics
 - [ ] Track and log training loss throughout training.
