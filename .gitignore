@@ -14,3 +14,17 @@ recipe_index*
 
 # data
 data/
+
+# environment and logs
+.env*
+venv/
+.venv/
+*.log
+
+# editor and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
