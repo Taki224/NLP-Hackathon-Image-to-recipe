@@ -47,9 +47,10 @@
 ### 2.2 Model Architecture Experiments
 - [ ] Use LongCLIP as the base model to support full recipe text (title + ingredients + instructions).
 - [ ] Verify full recipe text (title + ingredients + instructions) fits within LongCLIP's 248-token limit; truncate instructions if needed, prioritising title and ingredients
-- [ ] Experiment with lightweight adapter architectures (e.g., a bottleneck MLP like 512 -> 64 -> 512) or a TIP-Adapter to prevent overfitting on the low-volume training data.
-- [ ] Experiment with generating hard positive and negative pairs for training to improve model discrimination between similar dishes (e.g., Goulash vs Mediterranean soup) and maximize learning signal from the small dataset.
-- [ ] Experiment with training on a larger but lower-quality dataset (e.g., bypassing VLM validation or lowering SigLIP thresholds) and unfreezing the last encoder layers to baseline if data volume outperforms data quality.
+- [ ] Re-introduce unfreezing the last few layers of the LongCLIP model (image and text encoders) since the dataset has successfully scaled to 74k high-quality pairs.
+- [ ] Experiment with lightweight adapter architectures (e.g., a bottleneck MLP like 512 -> 64 -> 512) or a TIP-Adapter and compare performance against the unfrozen base layers.
+- [ ] Experiment with generating hard positive and negative pairs for training to improve model discrimination between similar dishes (e.g., Goulash vs Mediterranean soup).
+- [ ] Experiment with training on a larger but lower-quality dataset (e.g., bypassing VLM validation or lowering SigLIP thresholds) to baseline if raw volume outperforms our filtered 74k high-quality data.
 
 ### 2.3 Training Loop & Metrics
 - [ ] Track and log training loss throughout training.

@@ -139,3 +139,14 @@ After applying the strict multi-stage filtering (SigLIP threshold > 0.5 + VLM va
 - **Overfitting Risk:** With such a limited amount of training data, unfreezing the base layers of a massive model like LongCLIP will inevitably lead to severe overfitting. 
 - **Lightweight Adapters:** We must abandon unfreezing the base encoders. Instead, we should rely on highly parameter-efficient fine-tuning methods. Exploring a bottleneck MLP adapter (e.g., 512 -> 64 -> 512) or a TIP-Adapter will allow domain adaptation without destroying the base model's existing generalization.
 - **Hard Mining:** Since the overall volume is low, maximizing the signal-to-noise ratio in every batch is paramount. Training with hard negative and hard positive pairs will challenge the model to learn fine-grained discriminative features (like determining Goulash vs. typical Beef Stew) despite the smaller data pool.
+
+## 10. Fixing the Data Yield & Checkpointing Flaws
+
+**The Problem:**
+When trying to run the long-running SigLIP + VLM stages, the notebook occasionally crashed. The initial checkpointing implementation failed to resume seamlessly because the prior step generating the candidate `paired_dataset` used non-deterministic random sampling. Upon a kernel restart, it generated a completely different set of random pairs, causing the saved checkpoint dictionary keys to mismatch. Furthermore, the strict 500-recipe cap and strict zero-reuse deduplication were artificially choking the yield.
+
+**The Solution:**
+By removing the 500-recipe pool cap in the regex search and allowing high-quality recipes to be reused up to 5 times across different images, we prevented early pool exhaustion. After running the stabilized pipeline, we successfully generated **~74,000 high-quality image-recipe pairs**.
+
+**The Impact:**
+With 74k high-quality pairs, the severe overfitting risk encountered when we only had 8k pairs (Issue #9) is mitigated. We now have sufficient data volume to safely resume experiments with unfreezing the last few layers of the base LongCLIP text and image encoders, giving us the flexibility to compare full parameter fine-tuning against parameter-efficient adapter methods.
