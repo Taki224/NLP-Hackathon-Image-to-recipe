@@ -46,16 +46,17 @@
 
 ### 2.2 Model Architecture Experiments
 - [ ] Use LongCLIP as the base model to support full recipe text (title + ingredients + instructions).
-- [ ] Verify full recipe text (title + ingredients + instructions) fits within LongCLIP's 248-token limit; truncate instructions if needed, prioritising title and ingredients
-- [ ] Re-introduce unfreezing the last few layers of the LongCLIP model (image and text encoders) since the dataset has successfully scaled to 74k high-quality pairs.
-- [ ] Experiment with lightweight adapter architectures (e.g., a bottleneck MLP like 512 -> 64 -> 512) or a TIP-Adapter and compare performance against the unfrozen base layers.
-- [ ] Experiment with generating hard positive and negative pairs for training to improve model discrimination between similar dishes (e.g., Goulash vs Mediterranean soup).
-- [ ] Experiment with training on a larger but lower-quality dataset (e.g., bypassing VLM validation or lowering SigLIP thresholds) to baseline if raw volume outperforms our filtered 74k high-quality data.
+- [ ] Verify full recipe text (title + ingredients + instructions) fits within LongCLIP's 248-token limit; truncate instructions if needed, prioritising title and ingredients.
+- [ ] Train "Unfreeze last layer + adapter" model on the high-volume keyword-only dataset (questionable quality).
+- [ ] Train "Unfreeze last layer + adapter" model with domain adaptation on the ~70k pairs dataset. (Warmup image encoder first for food visual features, then text encoder for recipe language, then joint contrastive training).
+- [ ] Train standard Adapter on the 8k curated pairs dataset (no repetition, higher siglip threshold, bottom 50% thrown out).
+- [ ] Train Tip-Adapter on the 8k curated pairs dataset.
 
 ### 2.3 Training Loop & Metrics
-- [ ] Track and log training loss throughout training.
+- [ ] Implement curriculum learning for models trained on datasets with SigLIP scores: order training data by SigLIP score.
+- [ ] Implement early stopping so the total epochs needed makes sense.
+- [ ] Track and log detailed training metrics for each model experiment: length of model training, used memory, epochs needed, and loss during epochs.
 - [ ] Save model checkpoints at regular intervals (e.g., every N epochs or when loss improves).
-- [ ] Log and plot training loss progression.
 
 ### 2.4 Post-Training Tasks
 - [ ] After training completes, re-run the Step 10 `retrieve()` sanity check with a few sample images to confirm the new model and updated index produce sensible results before hackathon day.
@@ -83,8 +84,9 @@
 
 ## 4. Manual Testing & Validation
 
-### 4.1 Manual Testing with Known Pairs
-- [ ] Prepare a small set of image-recipe pairs with known correct matches.
-- [ ] Index the recipes from these pairs into the model's retrieval index.
-- [ ] For each test image, retrieve the top results and check if the model successfully finds the known paired recipe(s).
-- [ ] Document which pairs were retrieved correctly and which were missed to identify any failure modes.
+### 4.1 Benchmark Evaluation
+- [ ] Manually construct a benchmark dataset of 100 images with real, connected ground-truth recipes.
+- [ ] Index the recipes and perform retrieval for the 100 benchmark images using every trained model.
+- [ ] Implement scoring system: 1st place = 3pts, 2nd = 2pts, 3rd = 1pt.
+- [ ] Evaluate and compare every model variation on this benchmark to determine the best overall architecture.
+- [ ] Note which one was found. Try to order the new images into the categories. If something is not found check if the problem is that, that category was underrepresented in the respective dataset category. Prooving this hypothesis.
