@@ -15,6 +15,11 @@ recipe_index*
 # data
 data/
 
+# model weights (use git-lfs or external storage)
+*.pt
+*.pth
+*.ckpt
+
 # environment and logs
 .env*
 venv/

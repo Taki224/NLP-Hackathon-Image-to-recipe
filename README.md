@@ -18,6 +18,21 @@ Drop food photos into `test_images/` and run Step 11 of `training.ipynb`.
 
 ---
 
+## Model Weights
+
+Trained weights are **not** stored in git. Download the checkpoint and place it at `models/checkpoints/best_model.pt`:
+
+```bash
+hf download llevi95/dish-to-recipe best_model.pt \
+  --local-dir models/checkpoints
+```
+
+> Maintainers: upload a new checkpoint with
+> `hf upload llevi95/dish-to-recipe models/checkpoints/best_model.pt`,
+> then update `llevi95` above.
+
+---
+
 ## Model Architecture
 
 | Component | Details |
