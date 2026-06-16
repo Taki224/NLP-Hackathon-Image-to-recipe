@@ -67,7 +67,7 @@ The trained checkpoint is hosted on HuggingFace at `llevi95/dish-to-recipe` <!--
 
 Download:
 ```bash
-hf download llevi95/dish-to-recipe best_model.pt --local-dir models/checkpoints
+uv run hf download llevi95/dish-to-recipe best_model.pt --local-dir models/checkpoints
 ```
 
 Place the file at `models/checkpoints/best_model.pt`.
@@ -79,13 +79,15 @@ Downloaded automatically via HuggingFace `datasets` library in the data creation
 
 HuggingFace cache: `~/.cache/huggingface/` <!-- VERIFY: exact cache path on your platform -->
 
-### Food.com Recipes (text)
-Requires manual download of `RAW_recipes.csv` from Kaggle:
+### Recipe corpus (text)
+Downloaded via `helper_scripts/recipe_download.py`, which uses `kagglehub` to pull `wilmerarltstrmberg/recipe-dataset-over-2m` and writes `output/recipe_dataset_2m.csv`. The notebooks expect it at `data/datasets/recipe_dataset_2m.csv`:
+
 ```bash
-kaggle datasets download shuyangli94/food-com-recipes-and-user-interactions
+uv run python helper_scripts/recipe_download.py
+mkdir -p data/datasets && mv output/recipe_dataset_2m.csv data/datasets/
 ```
 
-Place `RAW_recipes.csv` in the project root or update the path in the data creation notebook.
+The CSV must have `title`, `ingredients`, and `directions` columns (the indexing notebook reads these).
 
 ## Model Hyperparameters
 
@@ -94,7 +96,7 @@ These are set in the training notebooks (`notebooks/phase2/train.ipynb`), not in
 | Parameter | Default | Location |
 |-----------|---------|---------|
 | CLIP backbone | `ViT-L-14` | notebook cell |
-| Adapter hidden dim | 256 | notebook cell |
+| Adapter hidden dim (bottleneck) | 64 | notebook cell (`ADAPTER_BOTTLENECK`) |
 | Embedding dim | 768 | model architecture |
 | Temperature init | 0.07 | model architecture |
 | Batch size | <!-- VERIFY: check notebook --> | notebook cell |

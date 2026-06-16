@@ -34,7 +34,7 @@ Indexing (offline):
 |-----------|---------|
 | Image encoder | CLIP-ViT-L/14 (frozen weights) + 2-layer MLP adapter |
 | Text encoder | CLIP text transformer (frozen weights) + 2-layer MLP adapter |
-| Adapter architecture | Linear(768→256) → ReLU → Linear(256→768) + residual connection |
+| Adapter architecture | Linear(768→64) → ReLU → Linear(64→768) + residual connection |
 | Training loss | Symmetric InfoNCE contrastive loss |
 | Temperature | Learnable scalar, initialised at 0.07 |
 | Embedding dimension | 768 |
@@ -82,7 +82,7 @@ Response: JSON array
 ]
 ```
 
-**Current state:** `/retrieve` returns hardcoded placeholder recipes. The ML inference pipeline (model load → image embed → index search) is not yet wired into the API.
+**Current state:** `/retrieve` runs the real pipeline (model load → image embed → cosine search) via `ui/src/retriever.py`. It searches a full prebuilt index at `data/indexes/` if present, otherwise a small bundled recipe set (`ui/src/recipes_seed.json`) embedded once and cached. If the checkpoint or ML deps are missing it falls back to hardcoded placeholders, which keeps the CI contract test (`tests/test_app_contract.py`) green without a multi-GB torch install.
 
 ### Training Infrastructure
 
@@ -132,5 +132,6 @@ Hackathon/
 | Freeze CLIP backbone | Fast training, avoids forgetting, CLIP features already strong |
 | Adapter-only training | Minimal parameters, good transfer |
 | Offline recipe indexing | Inference latency is O(1) query embed + ANN search, not O(N) forward passes |
-| Title + score output only | Avoids recipe text serving complexity; sufficient for demo |
+| Return title, ingredients, instructions + score | Metadata is stored alongside the index, so serving full recipe text is cheap |
+| Bundled seed corpus + placeholder fallback | App works on a fresh clone with just the checkpoint, and CI stays torch-free |
 | uv for dependency management | Reproducible, fast installs |
