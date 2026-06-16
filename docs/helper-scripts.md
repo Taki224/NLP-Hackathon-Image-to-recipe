@@ -61,24 +61,7 @@ Merges Food101 and ISIA Food-500 into a single unified dataset. Maps ISIA-500 cl
 
 **Note:** `BASE_DIR` is hardcoded. Update before running.
 
----
-
-### `merge_train_val.py`
-
-Merges train and validation splits from a structured dataset directory into a single combined dataset.
-
-**Note:** Paths are hardcoded. Update `BASE_DIR` before running.
-
----
-
-### `splitter.py`
-
-Splits a merged dataset into train/val subsets using an 80/20 ratio (seed 42 for reproducibility). Operates on a per-category basis to maintain class balance.
-
-**Input:** `{BASE_DIR}/merged_dataset/`
-**Output:** `{BASE_DIR}/final_dataset/train/` and `final_dataset/val/`
-
-**Note:** `BASE_DIR` is hardcoded. Update before running.
+The training notebook reads `combined_dataset` and handles its own train/val split, so just copy the merged output: `cp -r <base>/merged_dataset <base>/combined_dataset`.
 
 ## Typical Execution Order
 
@@ -86,9 +69,8 @@ Splits a merged dataset into train/val subsets using an 80/20 ratio (seed 42 for
 download_full_data.py      # Food101 images
 download_isia500.py        # ISIA Food-500 images (optional, large)
 recipe_download.py         # Recipe text data
-merger.py                  # Merge image datasets
-merge_train_val.py         # Merge splits
-splitter.py                # Create 80/20 train/val split
+merger.py                  # Merge image datasets -> merged_dataset
+# then: cp -r <base>/merged_dataset <base>/combined_dataset
 ```
 
 After this, run the data creation notebooks (`notebooks/phase2/data_creator.ipynb`) to build image-recipe pairs.

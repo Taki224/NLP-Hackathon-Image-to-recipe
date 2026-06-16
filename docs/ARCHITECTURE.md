@@ -49,8 +49,7 @@ Adapters are the only trainable parameters. The CLIP backbone is frozen, which k
 | Food101 image download | HuggingFace `datasets` | `data/images/` |
 | Food.com recipe download | `kagglehub` + `recipe_download.py` | CSV |
 | Category matching | Keyword matching (dish name → Food.com category) | Aligned image-recipe pairs |
-| Dataset splitting | `splitter.py` | train/val splits |
-| Train+val merge | `merge_train_val.py` | merged dataset |
+| Image dataset merge | `merger.py` | `merged_dataset/` (→ copy to `combined_dataset/`) |
 | Recipe embedding precomputation | training notebook | `data/indexes/*.npy` |
 
 Helper scripts in `helper_scripts/` handle raw data acquisition and restructuring. Jupyter notebooks in `notebooks/` handle model training and embedding generation.
@@ -107,9 +106,7 @@ Hackathon/
 │   ├── download_full_data.py   # Food101 via HuggingFace
 │   ├── download_isia500.py     # ISIA Food-500 downloader
 │   ├── recipe_download.py      # Food.com via kagglehub
-│   ├── splitter.py             # Train/val split
-│   ├── merger.py               # Dataset merging
-│   └── merge_train_val.py      # Merge train and validation sets
+│   └── merger.py               # Merge Food101 + ISIA-500 image datasets
 ├── ui/
 │   ├── src/app.py        # FastAPI backend
 │   └── static/           # Frontend HTML/JS

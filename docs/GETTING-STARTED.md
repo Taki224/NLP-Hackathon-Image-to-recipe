@@ -87,17 +87,16 @@ Supports resume on interrupted downloads.
 ### 4. Merge datasets
 
 ```bash
-uv run python helper_scripts/merger.py          # merge Food101 + ISIA-500
-uv run python helper_scripts/merge_train_val.py # merge train/val splits
+uv run python helper_scripts/merger.py   # merge Food101 + ISIA-500 -> merged_dataset
 ```
 
-### 5. Split dataset
+The training notebook reads `combined_dataset` and does its own train/val handling, so just point it there:
 
 ```bash
-uv run python helper_scripts/splitter.py   # 80/20 train/val split
+cp -r <base>/merged_dataset <base>/combined_dataset
 ```
 
-### 6. Data creation and training
+### 5. Data creation and training
 
 Open `notebooks/phase2/data_creator.ipynb` and run cells top-to-bottom. Then open `notebooks/phase2/train.ipynb` and run cells.
 
