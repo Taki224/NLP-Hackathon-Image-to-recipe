@@ -9,7 +9,9 @@ import requests
 from pathlib import Path
 
 BASE_URL   = "http://123.57.42.89/Dataset_ict/ISIA_Food500_Dir/dataset/"
-DEST_DIR   = Path("/aux/s22imc10262/NLP_hackathon_data/full_data_isia-food-500")
+# DATA_ROOT env var, default = <repo>/data/datasets
+DATA_ROOT  = Path(os.environ.get("DATA_ROOT", Path(__file__).resolve().parents[1] / "data" / "datasets"))
+DEST_DIR   = DATA_ROOT / "full_data_isia-food-500"
 CHUNK_SIZE = 4 * 1024 * 1024   # 4 MB
 MAX_RETRY  = 99999              # effectively retry forever
 TIMEOUT    = 60                 # seconds per read

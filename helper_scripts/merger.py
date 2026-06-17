@@ -3,8 +3,8 @@ import shutil
 from pathlib import Path
 
 # --- Configuration Paths ---
-# Adjust these paths if you run the script from a different directory
-BASE_DIR = Path("/home/s22imc10262/data/NLP/hackathon/data/datasets")
+# DATA_ROOT env var, default = <repo>/data/datasets
+BASE_DIR = Path(os.environ.get("DATA_ROOT", Path(__file__).resolve().parents[1] / "data" / "datasets"))
 FOOD101_DIR = BASE_DIR / "full_data_food101"
 ISIA500_DIR = BASE_DIR / "full_data_isia-food-500" / "images"
 OUTPUT_DIR = BASE_DIR / "merged_dataset"

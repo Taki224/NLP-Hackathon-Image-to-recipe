@@ -1,13 +1,17 @@
 import os
+from pathlib import Path
 from datasets import load_dataset
 from tqdm import tqdm
+
+# DATA_ROOT env var, default = <repo>/data/datasets
+DATA_ROOT = Path(os.environ.get("DATA_ROOT", Path(__file__).resolve().parents[1] / "data" / "datasets"))
 
 def save_food101_images():
     print("Downloading/Loading Food101 dataset from HuggingFace...")
     dataset = load_dataset('food101')
-    
-    # Define the exact absolute path where the images will be permanently stored
-    output_dir = "/home/s22imc10262/aux/NLP_hackathon_data/full_data"
+
+    # merger.py expects food101 images under DATA_ROOT/full_data_food101/<split>/<cat>/
+    output_dir = str(DATA_ROOT / "full_data_food101")
     os.makedirs(output_dir, exist_ok=True)
     
     print(f"Exporting raw image files to {output_dir}...")
