@@ -33,3 +33,9 @@ venv/
 Thumbs.db
 *.tmp
 *.swp
+
+# final run data
+final_run/data
+final_run/models
+final_run/reports
+final_run/sam_weight
