@@ -558,10 +558,18 @@ if ckpt_path:
         print(f"Failed to load checkpoint: {e}. Starting from scratch.")
         ckpt_path = None
 
-trainer.fit(lit_model, train_dataloaders=train_loader, ckpt_path=ckpt_path)
-
-if checkpoint_callback.best_model_path:
-    CHECKPOINT_PATH = Path(checkpoint_callback.best_model_path)
+APP_CHECKPOINT_PATH = CHECKPOINT_DIR / 'best_model.pt'
+if APP_CHECKPOINT_PATH.exists():
+    print(f"Trained model {APP_CHECKPOINT_PATH} already exists. Skipping training and going straight to indexing.")
+    # Find the latest best_model*.ckpt file to load
+    ckpt_files = list(CHECKPOINT_DIR.glob("best_model*.ckpt"))
+    if ckpt_files:
+        CHECKPOINT_PATH = max(ckpt_files, key=os.path.getmtime)
+        print(f"Using existing checkpoint: {CHECKPOINT_PATH}")
+else:
+    trainer.fit(lit_model, train_dataloaders=train_loader, ckpt_path=ckpt_path)
+    if checkpoint_callback.best_model_path:
+        CHECKPOINT_PATH = Path(checkpoint_callback.best_model_path)
 
 print(f'Best checkpoint: {CHECKPOINT_PATH}')
 

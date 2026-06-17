@@ -216,7 +216,7 @@ def process_item(item):
     }
 
 print("Starting parallel augmentation pipeline...")
-max_workers = 8  # Scale to balance CPU/GPU and Ollama concurrency
+max_workers = 4  # Scale to balance CPU/GPU and Ollama concurrency
 
 if len(filtered_dataset) > 0:
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
