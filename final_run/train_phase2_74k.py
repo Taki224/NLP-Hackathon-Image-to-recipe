@@ -10,7 +10,6 @@
 # ## Step 1 — Install Dependencies
 # Install the Python packages needed for training and indexing.
 
-# In[1]:
 
 
 pass # pass # get_ipython().system('uv add lightning open_clip_torch torch torchvision pillow tqdm pandas numpy -q')
@@ -19,7 +18,6 @@ pass # pass # get_ipython().system('uv add lightning open_clip_torch torch torch
 # ## Step 2 — Imports & Device Setup
 # Import libraries, set paths, and choose dataset and metadata sources.
 
-# In[ ]:
 
 
 import json
@@ -88,7 +86,6 @@ if device == 'cuda':
 # ## Step 3 — Load CLIP Model
 # Load a LongCLIP-capable model and tokenizer, set context length, and freeze base weights.
 
-# In[ ]:
 
 
 MODEL_NAME = 'ViT-L-14'
@@ -112,7 +109,6 @@ print(f'{MODEL_NAME} loaded ({model_source}) with context length {CONTEXT_LENGTH
 # Only these layers are trained — keeps training fast and stable.
 # Configure adapters and optional unfreezing of the last encoder blocks.
 
-# In[ ]:
 
 
 if hasattr(model, 'text_projection') and model.text_projection is not None:
@@ -192,7 +188,6 @@ print(f'Base layers unfrozen: {UNFREEZE_LAST_LAYERS if TRAIN_BASE else 0}')
 # ## Step 5 — Dataset Class
 # Build the dataset with full recipe text, token truncation, and optional hard-positive text.
 
-# In[ ]:
 
 
 MAX_TOKENS = CONTEXT_LENGTH
@@ -338,7 +333,6 @@ else:
 # ## Step 6 — DataLoader
 # Set hyperparameters and create the DataLoader, optimizer, and scheduler.
 
-# In[ ]:
 
 
 BATCH_SIZE = 2048
@@ -365,7 +359,6 @@ print(f'Total steps: {len(train_loader) * NUM_EPOCHS}')
 # ## Step 7 — InfoNCE Loss Function
 # Define the symmetric contrastive loss for image-text matching.
 
-# In[ ]:
 
 
 def infonce_loss(image_embeds, text_embeds, log_temp):
@@ -390,7 +383,6 @@ def infonce_loss(image_embeds, text_embeds, log_temp):
 # ## Step 8 — Training Loop
 # Run training with checkpoint resume, early stopping, and optional hard positive/negative losses.
 
-# In[ ]:
 
 
 seed_everything(42, workers=True)
@@ -547,7 +539,6 @@ print(f'Best checkpoint: {CHECKPOINT_PATH}')
 # ## Step 9 — Plot Training Loss
 # Plot and save the loss curve for review.
 
-# In[ ]:
 
 
 import matplotlib.pyplot as plt
@@ -587,7 +578,6 @@ else:
 # This only needs to run once — the index is reused at inference time.
 # Generate embeddings and save the index plus recipe id mapping.
 
-# In[ ]:
 
 
 import pandas as pd
@@ -655,7 +645,7 @@ if not INDEX_PATH.exists():
 
     print(f'Indexing {len(recipes_df)} recipes...')
     all_embeddings = []
-    EMBED_BATCH = 512
+    EMBED_BATCH = 2048
 
     with torch.no_grad():
         for i in tqdm(range(0, len(recipes_df), EMBED_BATCH)):
@@ -707,7 +697,6 @@ print(f'Recipe ids saved: {INDEX_IDS_PATH}')
 # Sanity check: query with a Food101 image and see if the top-3 results make sense.
 # Run retrieval and render results with ingredients and instructions.
 
-# In[ ]:
 
 
 # Step 11 — Retrieval Test on New Images
