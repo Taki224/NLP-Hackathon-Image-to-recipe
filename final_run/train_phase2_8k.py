@@ -95,40 +95,10 @@ MODEL_NAME = 'ViT-L-14'
 PRETRAINED = 'openai'
 CONTEXT_LENGTH = 248
 
-def load_longclip(model_name, pretrained, context_length):
-    try:
-        model, _, preprocess = open_clip.create_model_and_transforms(model_name, pretrained='longclip')
-        source = 'longclip'
-    except Exception:
-        model, _, preprocess = open_clip.create_model_and_transforms(model_name, pretrained=pretrained)
-        source = pretrained
-    if hasattr(model, 'context_length'):
-        model.context_length = context_length
-        
-    if hasattr(model, 'positional_embedding') and model.positional_embedding.shape[0] != context_length:
-        pe = model.positional_embedding
-        new_pe = torch.zeros(context_length, pe.shape[1], device=pe.device, dtype=pe.dtype)
-        new_pe[:pe.shape[0]] = pe
-        new_pe[pe.shape[0]:] = pe[-1]
-        model.positional_embedding = torch.nn.Parameter(new_pe)
-        
-    if hasattr(model, 'attn_mask') and model.attn_mask is not None and model.attn_mask.shape[0] != context_length:
-        mask = torch.empty(context_length, context_length, device=model.attn_mask.device)
-        mask.fill_(float("-inf"))
-        mask.triu_(1)
-        model.attn_mask = mask
-        
-    return model, preprocess, source
+from longclip_loader import load_longclip, tokenize
 
 model, preprocess, model_source = load_longclip(MODEL_NAME, PRETRAINED, CONTEXT_LENGTH)
 model = model.to(device)
-
-def tokenize(texts):
-    try:
-        return open_clip.tokenize(texts, context_length=CONTEXT_LENGTH)
-    except TypeError:
-        tokenizer = open_clip.get_tokenizer(MODEL_NAME)
-        return tokenizer(texts)
 
 # Freeze all base CLIP weights by default
 for param in model.parameters():
@@ -371,7 +341,7 @@ else:
 # In[ ]:
 
 
-BATCH_SIZE = 512
+BATCH_SIZE = 2048
 NUM_EPOCHS = 30
 LR = 1e-4
 WEIGHT_DECAY = 0.01

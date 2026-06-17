@@ -51,8 +51,8 @@ if device == 'cuda':
 # In[3]:
 
 
-model, _, preprocess = open_clip.create_model_and_transforms('ViT-L-14', pretrained='openai')
-tokenizer = open_clip.get_tokenizer('ViT-L-14')
+from longclip_loader import load_longclip, tokenize as tokenizer
+model, preprocess, _ = load_longclip('ViT-L-14', context_length=248)
 model = model.to(device)
 
 # Freeze all base CLIP weights
@@ -156,7 +156,7 @@ print(f'Text tensor shape:  {txt_t.shape}')
 # In[17]:
 
 
-BATCH_SIZE = 512
+BATCH_SIZE = 2048
 NUM_EPOCHS = 30
 LR = 1e-4
 
