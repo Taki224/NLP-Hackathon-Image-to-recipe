@@ -132,9 +132,14 @@ print(f"Dataset size: {len(dataset)} pairs")
 BATCH_SIZE = 2048
 NUM_EPOCHS = 30
 LR = 1e-4
-NUM_WORKERS = 8
-
-train_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, pin_memory=(device=='cuda'))
+train_loader = DataLoader(
+    dataset,
+    batch_size=BATCH_SIZE,
+    shuffle=True,
+    num_workers=4,           # Reduced from 8 to lower CPU/thread overhead
+    pin_memory=(device == 'cuda'),
+    persistent_workers=True   # Keeps workers alive to avoid repeatedly re-forking
+)
 
 
 # ## 3. Multi-Level Circle Loss
