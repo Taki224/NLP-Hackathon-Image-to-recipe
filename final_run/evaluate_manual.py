@@ -30,22 +30,11 @@ def evaluate_model(name, model_name, pretrained, context_length, bottleneck, che
     print(f"\n--- Evaluating {name} on Manual Pairs ---")
     
     # 1. Load base model
-    try:
-        model, _, preprocess = open_clip.create_model_and_transforms(model_name, pretrained=pretrained)
-    except:
-        model, _, preprocess = open_clip.create_model_and_transforms(model_name, pretrained='openai')
-        
-    if hasattr(model, 'context_length'):
-        model.context_length = context_length
+    from longclip_loader import load_longclip, tokenize
+    
+    model, preprocess, _ = load_longclip(model_name, pretrained, context_length)
     model = model.to(device)
     model.eval()
-
-    def tokenize(texts):
-        try:
-            return open_clip.tokenize(texts, context_length=context_length)
-        except TypeError:
-            tokenizer = open_clip.get_tokenizer(model_name)
-            return tokenizer(texts)
             
     # 2. Load adapters if path is provided
     use_adapters = checkpoint_path is not None

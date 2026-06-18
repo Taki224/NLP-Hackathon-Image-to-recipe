@@ -10,7 +10,6 @@
 # ## Step 1 — Install Dependencies
 # Install the Python packages needed for training and indexing.
 
-# In[1]:
 
 
 pass # pass # get_ipython().system('uv add lightning open_clip_torch torch torchvision pillow tqdm pandas numpy -q')
@@ -19,7 +18,6 @@ pass # pass # get_ipython().system('uv add lightning open_clip_torch torch torch
 # ## Step 2 — Imports & Device Setup
 # Import libraries, set paths, and choose dataset and metadata sources.
 
-# In[ ]:
 
 
 import json
@@ -88,47 +86,16 @@ if device == 'cuda':
 # ## Step 3 — Load CLIP Model
 # Load a LongCLIP-capable model and tokenizer, set context length, and freeze base weights.
 
-# In[ ]:
 
 
 MODEL_NAME = 'ViT-L-14'
 PRETRAINED = 'openai'
 CONTEXT_LENGTH = 248
 
-def load_longclip(model_name, pretrained, context_length):
-    try:
-        model, _, preprocess = open_clip.create_model_and_transforms(model_name, pretrained='longclip')
-        source = 'longclip'
-    except Exception:
-        model, _, preprocess = open_clip.create_model_and_transforms(model_name, pretrained=pretrained)
-        source = pretrained
-    if hasattr(model, 'context_length'):
-        model.context_length = context_length
-        
-    if hasattr(model, 'positional_embedding') and model.positional_embedding.shape[0] != context_length:
-        pe = model.positional_embedding
-        new_pe = torch.zeros(context_length, pe.shape[1], device=pe.device, dtype=pe.dtype)
-        new_pe[:pe.shape[0]] = pe
-        new_pe[pe.shape[0]:] = pe[-1]
-        model.positional_embedding = torch.nn.Parameter(new_pe)
-        
-    if hasattr(model, 'attn_mask') and model.attn_mask is not None and model.attn_mask.shape[0] != context_length:
-        mask = torch.empty(context_length, context_length, device=model.attn_mask.device)
-        mask.fill_(float("-inf"))
-        mask.triu_(1)
-        model.attn_mask = mask
-        
-    return model, preprocess, source
+from longclip_loader import load_longclip, tokenize
 
 model, preprocess, model_source = load_longclip(MODEL_NAME, PRETRAINED, CONTEXT_LENGTH)
 model = model.to(device)
-
-def tokenize(texts):
-    try:
-        return open_clip.tokenize(texts, context_length=CONTEXT_LENGTH)
-    except TypeError:
-        tokenizer = open_clip.get_tokenizer(MODEL_NAME)
-        return tokenizer(texts)
 
 # Freeze all base CLIP weights by default
 for param in model.parameters():
@@ -142,7 +109,6 @@ print(f'{MODEL_NAME} loaded ({model_source}) with context length {CONTEXT_LENGTH
 # Only these layers are trained — keeps training fast and stable.
 # Configure adapters and optional unfreezing of the last encoder blocks.
 
-# In[ ]:
 
 
 if hasattr(model, 'text_projection') and model.text_projection is not None:
@@ -222,7 +188,6 @@ print(f'Base layers unfrozen: {UNFREEZE_LAST_LAYERS if TRAIN_BASE else 0}')
 # ## Step 5 — Dataset Class
 # Build the dataset with full recipe text, token truncation, and optional hard-positive text.
 
-# In[ ]:
 
 
 MAX_TOKENS = CONTEXT_LENGTH
@@ -368,10 +333,9 @@ else:
 # ## Step 6 — DataLoader
 # Set hyperparameters and create the DataLoader, optimizer, and scheduler.
 
-# In[ ]:
 
 
-BATCH_SIZE = 512
+BATCH_SIZE = 2048
 NUM_EPOCHS = 30
 LR = 1e-4
 WEIGHT_DECAY = 0.01
@@ -395,7 +359,6 @@ print(f'Total steps: {len(train_loader) * NUM_EPOCHS}')
 # ## Step 7 — InfoNCE Loss Function
 # Define the symmetric contrastive loss for image-text matching.
 
-# In[ ]:
 
 
 def infonce_loss(image_embeds, text_embeds, log_temp):
@@ -420,7 +383,6 @@ def infonce_loss(image_embeds, text_embeds, log_temp):
 # ## Step 8 — Training Loop
 # Run training with checkpoint resume, early stopping, and optional hard positive/negative losses.
 
-# In[ ]:
 
 
 seed_everything(42, workers=True)
@@ -558,10 +520,18 @@ if ckpt_path:
         print(f"Failed to load checkpoint: {e}. Starting from scratch.")
         ckpt_path = None
 
-trainer.fit(lit_model, train_dataloaders=train_loader, ckpt_path=ckpt_path)
-
-if checkpoint_callback.best_model_path:
-    CHECKPOINT_PATH = Path(checkpoint_callback.best_model_path)
+APP_CHECKPOINT_PATH = CHECKPOINT_DIR / 'best_model.pt'
+if APP_CHECKPOINT_PATH.exists():
+    print(f"Trained model {APP_CHECKPOINT_PATH} already exists. Skipping training and going straight to indexing.")
+    # Find the latest best_model*.ckpt file to load
+    ckpt_files = list(CHECKPOINT_DIR.glob("best_model*.ckpt"))
+    if ckpt_files:
+        CHECKPOINT_PATH = max(ckpt_files, key=os.path.getmtime)
+        print(f"Using existing checkpoint: {CHECKPOINT_PATH}")
+else:
+    trainer.fit(lit_model, train_dataloaders=train_loader, ckpt_path=ckpt_path)
+    if checkpoint_callback.best_model_path:
+        CHECKPOINT_PATH = Path(checkpoint_callback.best_model_path)
 
 print(f'Best checkpoint: {CHECKPOINT_PATH}')
 
@@ -569,7 +539,6 @@ print(f'Best checkpoint: {CHECKPOINT_PATH}')
 # ## Step 9 — Plot Training Loss
 # Plot and save the loss curve for review.
 
-# In[ ]:
 
 
 import matplotlib.pyplot as plt
@@ -609,7 +578,6 @@ else:
 # This only needs to run once — the index is reused at inference time.
 # Generate embeddings and save the index plus recipe id mapping.
 
-# In[ ]:
 
 
 import pandas as pd
@@ -677,7 +645,7 @@ if not INDEX_PATH.exists():
 
     print(f'Indexing {len(recipes_df)} recipes...')
     all_embeddings = []
-    EMBED_BATCH = 512
+    EMBED_BATCH = 2048
 
     with torch.no_grad():
         for i in tqdm(range(0, len(recipes_df), EMBED_BATCH)):
@@ -729,7 +697,6 @@ print(f'Recipe ids saved: {INDEX_IDS_PATH}')
 # Sanity check: query with a Food101 image and see if the top-3 results make sense.
 # Run retrieval and render results with ingredients and instructions.
 
-# In[ ]:
 
 
 # Step 11 — Retrieval Test on New Images

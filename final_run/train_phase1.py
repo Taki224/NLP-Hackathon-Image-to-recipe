@@ -9,7 +9,6 @@
 
 # ## Step 1 — Install Dependencies
 
-# In[1]:
 
 
 pass # pass # get_ipython().system('uv add open_clip_torch torch torchvision pillow tqdm -q')
@@ -17,7 +16,6 @@ pass # pass # get_ipython().system('uv add open_clip_torch torch torchvision pil
 
 # ## Step 2 — Imports & Device Setup
 
-# In[ ]:
 
 
 import json
@@ -48,11 +46,10 @@ if device == 'cuda':
 
 # ## Step 3 — Load CLIP Model
 
-# In[3]:
 
 
-model, _, preprocess = open_clip.create_model_and_transforms('ViT-L-14', pretrained='openai')
-tokenizer = open_clip.get_tokenizer('ViT-L-14')
+from longclip_loader import load_longclip, tokenize as tokenizer
+model, preprocess, _ = load_longclip('ViT-L-14', context_length=248)
 model = model.to(device)
 
 # Freeze all base CLIP weights
@@ -66,7 +63,6 @@ print('CLIP-ViT-L/14 loaded and frozen')
 # Small MLP adapters added on top of CLIP's frozen image and text encoders.
 # Only these layers are trained — keeps training fast and stable.
 
-# In[4]:
 
 
 class Adapter(nn.Module):
@@ -102,7 +98,6 @@ print(f'Trainable parameters: {total:,}')
 
 # ## Step 5 — Dataset Class
 
-# In[ ]:
 
 
 class FoodRecipeDataset(Dataset):
@@ -153,10 +148,9 @@ print(f'Text tensor shape:  {txt_t.shape}')
 
 # ## Step 6 — DataLoader
 
-# In[17]:
 
 
-BATCH_SIZE = 512
+BATCH_SIZE = 2048
 NUM_EPOCHS = 30
 LR = 1e-4
 
@@ -177,7 +171,6 @@ print(f'Total steps: {len(loader) * NUM_EPOCHS}')
 
 # ## Step 7 — InfoNCE Loss Function
 
-# In[18]:
 
 
 def infonce_loss(image_embeds, text_embeds, log_temp):
@@ -201,7 +194,6 @@ def infonce_loss(image_embeds, text_embeds, log_temp):
 
 # ## Step 8 — Training Loop
 
-# In[ ]:
 
 
 CHECKPOINT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -286,7 +278,6 @@ else:
 
 # ## Step 9 — Plot Training Loss
 
-# In[ ]:
 
 
 import matplotlib.pyplot as plt
@@ -310,7 +301,6 @@ else:
 # Embeds all recipes from Food.com and saves to disk.
 # This only needs to run once — the index is reused at inference time.
 
-# In[ ]:
 
 
 import pandas as pd
@@ -345,7 +335,7 @@ print(f'Indexing {len(recipes_df)} recipes...')
 
 if not INDEX_PATH.exists():
     all_embeddings = []
-    EMBED_BATCH = 1024
+    EMBED_BATCH = 2048
 
     with torch.no_grad():
         for i in tqdm(range(0, len(recipes_df), EMBED_BATCH)):
@@ -373,7 +363,6 @@ else:
 # ## Step 11 — Quick Retrieval Test
 # Sanity check: query with a Food101 image and see if the top-3 results make sense.
 
-# In[ ]:
 
 
 # Step 11 — Retrieval Test on New Images

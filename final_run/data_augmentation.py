@@ -10,7 +10,6 @@
 # 
 # We use the official Meta `segment_anything` package.
 
-# In[1]:
 
 
 pass # pass # get_ipython().system('uv add segment_anything opencv-python requests tqdm pillow matplotlib')
@@ -60,7 +59,6 @@ print(f"Using device: {device}")
 
 # ## 1. Load Dataset & Models
 
-# In[3]:
 
 
 # Load SAM
@@ -83,7 +81,6 @@ else:
 
 # ## 2. Augmentation Functions
 
-# In[4]:
 
 
 def augment_text_with_ollama(title, ingredients, instructions):
@@ -216,7 +213,7 @@ def process_item(item):
     }
 
 print("Starting parallel augmentation pipeline...")
-max_workers = 8  # Scale to balance CPU/GPU and Ollama concurrency
+max_workers = 4  # Scale to balance CPU/GPU and Ollama concurrency
 
 if len(filtered_dataset) > 0:
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:

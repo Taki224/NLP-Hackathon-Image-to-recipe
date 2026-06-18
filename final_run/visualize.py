@@ -30,35 +30,11 @@ class Adapter(nn.Module):
 
 def get_embeddings(model_name, pretrained, context_length, bottleneck, checkpoint_path, test_data, subset_size=100):
     print(f"Loading model {model_name}...")
-    try:
-        model, _, preprocess = open_clip.create_model_and_transforms(model_name, pretrained=pretrained)
-    except:
-        model, _, preprocess = open_clip.create_model_and_transforms(model_name, pretrained='openai')
-    if hasattr(model, 'context_length'):
-        model.context_length = context_length
-        
-    if hasattr(model, 'positional_embedding') and model.positional_embedding.shape[0] != context_length:
-        pe = model.positional_embedding
-        new_pe = torch.zeros(context_length, pe.shape[1], device=pe.device, dtype=pe.dtype)
-        new_pe[:pe.shape[0]] = pe
-        new_pe[pe.shape[0]:] = pe[-1]
-        model.positional_embedding = torch.nn.Parameter(new_pe)
-        
-    if hasattr(model, 'attn_mask') and model.attn_mask is not None and model.attn_mask.shape[0] != context_length:
-        mask = torch.empty(context_length, context_length, device=model.attn_mask.device)
-        mask.fill_(float("-inf"))
-        mask.triu_(1)
-        model.attn_mask = mask
-        
+    from longclip_loader import load_longclip, tokenize
+    
+    model, preprocess, _ = load_longclip(model_name, pretrained, context_length)
     model = model.to(device)
     model.eval()
-
-    def tokenize(texts):
-        try:
-            return open_clip.tokenize(texts, context_length=context_length)
-        except TypeError:
-            tokenizer = open_clip.get_tokenizer(model_name)
-            return tokenizer(texts)
             
     image_adapter = Adapter(dim=768, bottleneck=bottleneck).to(device)
     text_adapter = Adapter(dim=768, bottleneck=bottleneck).to(device)
