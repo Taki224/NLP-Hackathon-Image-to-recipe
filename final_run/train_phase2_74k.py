@@ -348,9 +348,11 @@ train_loader = DataLoader(
     dataset,
     batch_size=BATCH_SIZE,
     shuffle=True,
-    num_workers=NUM_WORKERS,
-    pin_memory=(device == 'cuda')
- )
+    num_workers=4,           # Reduced from 8 to lower CPU/thread overhead
+    pin_memory=(device == 'cuda'),
+    persistent_workers=True   # Keeps workers alive to avoid repeatedly re-forking
+)
+
 
 print(f'Batches per epoch: {len(train_loader)}')
 print(f'Total steps: {len(train_loader) * NUM_EPOCHS}')

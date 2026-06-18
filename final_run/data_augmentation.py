@@ -19,7 +19,7 @@ import urllib.request
 from pathlib import Path
 
 # Download SAM weights if they don't exist
-weights_dir = Path("sam_weights")
+weights_dir = Path(__file__).parent / "sam_weights"
 weights_dir.mkdir(exist_ok=True)
 sam_checkpoint = weights_dir / "sam_vit_h_4b8939.pth"
 if not sam_checkpoint.exists():
@@ -213,7 +213,7 @@ def process_item(item):
     }
 
 print("Starting parallel augmentation pipeline...")
-max_workers = 4  # Scale to balance CPU/GPU and Ollama concurrency
+max_workers = 16  # Scale to balance CPU/GPU and Ollama concurrency
 
 if len(filtered_dataset) > 0:
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
