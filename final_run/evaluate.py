@@ -15,6 +15,57 @@ TEST_DATA_PATH = FINAL_RUN_DIR / 'data/datasets/test_dataset.json'
 REPORTS_DIR = FINAL_RUN_DIR / 'reports'
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
+RECIPE_METADATA_PATHS = [
+    PROJECT_ROOT / 'data/indexes/recipe_metadata.json',
+    PROJECT_ROOT / 'data/indexes/recipe_index_metadata_newdata3.json',
+    PROJECT_ROOT / 'data/indexes/recipe_index_metadata_newdata2.json',
+    PROJECT_ROOT / 'data/indexes/recipe_index_metadata_newdata.json',
+]
+
+def find_first_existing(paths):
+    for path in paths:
+        if path.exists():
+            return path
+    return None
+
+RECIPE_METADATA_PATH = find_first_existing(RECIPE_METADATA_PATHS)
+
+def token_count(text, context_length=512):
+    try:
+        tokens = open_clip.tokenize([text], context_length=context_length)
+    except TypeError:
+        tokens = open_clip.tokenize([text])
+    return int((tokens[0] != 0).sum().item())
+
+def normalize_ingredients(ingredients, max_ingredients=20):
+    if isinstance(ingredients, list):
+        return ', '.join([str(i) for i in ingredients[:max_ingredients]])
+    if isinstance(ingredients, str):
+        return ingredients
+    return str(ingredients)
+
+def build_full_text(title, ingredients, instructions, max_tokens=248):
+    title = str(title or '')
+    ingredients = normalize_ingredients(ingredients)
+    instructions = str(instructions or '')
+    base = f"Title: {title}\nIngredients: {ingredients}\nInstructions: "
+    if not instructions.strip():
+        return base.strip()
+    if token_count(base + instructions) <= max_tokens:
+        return base + instructions
+    words = instructions.split()
+    if not words:
+        return base.strip()
+    low, high = 0, len(words)
+    while low < high:
+        mid = (low + high + 1) // 2
+        candidate = base + ' '.join(words[:mid])
+        if token_count(candidate) <= max_tokens:
+            low = mid
+        else:
+            high = mid - 1
+    return base + ' '.join(words[:low])
+
 class Adapter(nn.Module):
     def __init__(self, dim=768, bottleneck=64):
         super().__init__()
@@ -26,7 +77,7 @@ class Adapter(nn.Module):
     def forward(self, x):
         return x + self.net(x)
 
-def evaluate_model(name, model_name, pretrained, context_length, bottleneck, checkpoint_path=None):
+def evaluate_model(name, model_name, pretrained, context_length, bottleneck, checkpoint_path=None, use_cropped=False):
     print(f"\n--- Evaluating {name} ---")
     
     # 1. Load base model
@@ -52,8 +103,19 @@ def evaluate_model(name, model_name, pretrained, context_length, bottleneck, che
         text_adapter.eval()
         
     # 3. Load Test Data
-    with open(TEST_DATA_PATH, 'r') as f:
+    data_path = FINAL_RUN_DIR / 'data/datasets/test_dataset_cropped.json' if use_cropped else TEST_DATA_PATH
+    if use_cropped:
+        print(f"Using cropped test dataset from {data_path}")
+    with open(data_path, 'r') as f:
         test_data = json.load(f)
+
+    # Load recipe metadata instructions lookup
+    metadata = {}
+    if RECIPE_METADATA_PATH and RECIPE_METADATA_PATH.exists():
+        print(f"Loading metadata instructions from {RECIPE_METADATA_PATH}")
+        with open(RECIPE_METADATA_PATH, 'r') as f:
+            raw_metadata = json.load(f)
+        metadata = {str(k): v for k, v in raw_metadata.items()}
         
     print(f"Embedding {len(test_data)} test items...")
     img_embeds = []
@@ -70,10 +132,16 @@ def evaluate_model(name, model_name, pretrained, context_length, bottleneck, che
             img_embeds.append(F.normalize(img_f, dim=-1).cpu().numpy())
             
             # Text
-            title = item.get('recipe_title', '')
-            ingredients = ', '.join(item.get('ingredients', [])[:15]) if isinstance(item.get('ingredients'), list) else item.get('ingredients', '')
-            text = f"Title: {title}\nIngredients: {ingredients}"
-            txt_t = tokenize([text]).to(device)
+            rid = str(item.get('recipe_id', ''))
+            title = item.get('recipe_title') or item.get('recipe_name') or ''
+            ingredients = item.get('ingredients', '')
+            instructions = ''
+            if rid in metadata:
+                meta = metadata[rid]
+                instructions = meta.get('instructions') or meta.get('directions', '')
+            
+            text = build_full_text(title, ingredients, instructions, max_tokens=context_length)
+            txt_t = tokenize([text], context_length=context_length).to(device)
             txt_f = model.encode_text(txt_t).float()
             if use_adapters: txt_f = text_adapter(txt_f)
             txt_embeds.append(F.normalize(txt_f, dim=-1).cpu().numpy())
@@ -128,12 +196,20 @@ def main():
         {"name": "Phase 1 Baseline (5k)", "model": "ViT-L-14", "pre": "openai", "ctx": 77, "btn": 256, "ckpt": FINAL_RUN_DIR / 'models/checkpoints/phase1/best_model.pt'},
         {"name": "Phase 2 Precision (8k)", "model": "ViT-L-14", "pre": "longclip", "ctx": 248, "btn": 64, "ckpt": FINAL_RUN_DIR / 'models/checkpoints/phase2_8k/best_model.pt'},
         {"name": "Phase 2 Scale (74k)", "model": "ViT-L-14", "pre": "longclip", "ctx": 248, "btn": 64, "ckpt": FINAL_RUN_DIR / 'models/checkpoints/phase2_74k/best_model.pt'},
-        {"name": "Phase 3 DAR (74k)", "model": "ViT-L-14", "pre": "longclip", "ctx": 248, "btn": 64, "ckpt": FINAL_RUN_DIR / 'models/checkpoints/dar_74k/best_model.pt'},
+        {"name": "Phase 3 DAR (74k)", "model": "ViT-L-14", "pre": "longclip", "ctx": 248, "btn": 64, "ckpt": FINAL_RUN_DIR / 'models/checkpoints/dar_74k/best_model.pt', "use_cropped": False},
     ]
     
     results = {}
     for cfg in models_to_eval:
-        res = evaluate_model(cfg["name"], cfg["model"], cfg["pre"], cfg["ctx"], cfg["btn"], cfg["ckpt"])
+        res = evaluate_model(
+            cfg["name"], 
+            cfg["model"], 
+            cfg["pre"], 
+            cfg["ctx"], 
+            cfg["btn"], 
+            cfg["ckpt"], 
+            use_cropped=cfg.get("use_cropped", False)
+        )
         results[cfg["name"]] = res
         
     # Generate Markdown Table
