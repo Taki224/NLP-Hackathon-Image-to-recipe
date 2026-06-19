@@ -37,5 +37,6 @@ Thumbs.db
 # final run data
 final_run/data
 final_run/models
-final_run/reports
+final_run/reports/lightning_logs
+final_run/reports/dar_lightning_logs
 final_run/sam_weight

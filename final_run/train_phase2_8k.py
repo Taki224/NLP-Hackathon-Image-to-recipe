@@ -335,7 +335,7 @@ else:
 
 
 
-BATCH_SIZE = 2048
+BATCH_SIZE = 512
 NUM_EPOCHS = 30
 LR = 1e-4
 WEIGHT_DECAY = 0.01
@@ -489,7 +489,7 @@ early_stopping = EarlyStopping(
     monitor='train_loss_epoch',
     mode='min',
     patience=5,
-    min_delta=0.05
+    min_delta=0.01
 )
 lr_monitor = LearningRateMonitor(logging_interval='step')
 logger = CSVLogger(save_dir=str(PROJECT_ROOT / 'final_run/reports'), name='lightning_logs')

@@ -305,3 +305,40 @@ if checkpoint_callback.best_model_path:
 
 print("Training Complete!")
 
+
+# ## 5. Plot Training Loss
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+metrics_path = Path(logger.log_dir) / 'metrics.csv'
+if metrics_path.exists():
+    metrics = pd.read_csv(metrics_path)
+    if 'train_loss_epoch' in metrics.columns:
+        loss_df = metrics.dropna(subset=['train_loss_epoch'])
+        loss_values = loss_df.groupby('epoch')['train_loss_epoch'].last().tolist()
+    elif 'train_loss_step' in metrics.columns:
+        loss_df = metrics.dropna(subset=['train_loss_step'])
+        loss_values = loss_df['train_loss_step'].tolist()
+    else:
+        loss_values = []
+        
+    if len(loss_values) > 0:
+        plt.figure(figsize=(8, 4))
+        plt.plot(range(1, len(loss_values) + 1), loss_values, marker='o', color='purple')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.title('DAR Training Loss (Multi-Level Circle Loss)')
+        plt.grid(True)
+        plt.tight_layout()
+        figures_dir = PROJECT_ROOT / 'final_run/reports/figures'
+        figures_dir.mkdir(parents=True, exist_ok=True)
+        plt.savefig(figures_dir / 'training_loss_dar_74k.png', dpi=100)
+        plt.show()
+        print(f"Plot saved successfully at {figures_dir / 'training_loss_dar_74k.png'}")
+    else:
+        print("Skipping plot generation because no new epochs were trained.")
+else:
+    print(f"Skipping plot: no metrics file found at {metrics_path}.")
+
+
