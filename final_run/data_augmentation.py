@@ -1,19 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # DAR Data Augmentation Pipeline
-# 
-# This notebook implements the Data Augmentation for Recipe retrieval (DAR) framework.
-# It uses:
-# 1. **Ollama (Llama 3)** to synthesize 30-word visual imaginations of recipes.
-# 2. **Segment Anything Model (SAM)** to crop food items out of the background.
-# 
-# We use the official Meta `segment_anything` package.
-
-
-
-pass # pass # get_ipython().system('uv add segment_anything opencv-python requests tqdm pillow matplotlib')
-
 import os
 import urllib.request
 from pathlib import Path

@@ -1,23 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # Model Training
-# Dish to Recipe — Cross-Modal Retrieval
-# 
-# Fine-tunes CLIP-ViT-L/14 adapter layers using InfoNCE contrastive loss on food-recipe pairs.
-# Expected training time: ~1 hour on a good GPU.
-
-# ## Step 1 — Install Dependencies
-
-
-
-pass # pass # get_ipython().system('uv add open_clip_torch torch torchvision pillow tqdm -q')
-
-
-# ## Step 2 — Imports & Device Setup
-
-
-
 import json
 import torch
 import torch.nn as nn

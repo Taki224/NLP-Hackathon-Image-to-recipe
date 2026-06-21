@@ -23,8 +23,8 @@ import torch.nn.functional as F
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
-CHECKPOINT = ROOT / "models/checkpoints/best_model.pt"
-INDEX_DIR = ROOT / "data/indexes"
+CHECKPOINT = Path(__file__).resolve().parent / "best_model.pt"
+INDEX_DIR = Path(__file__).resolve().parent
 SEED_RECIPES = Path(__file__).resolve().parent / "recipes_seed.json"
 SEED_CACHE = INDEX_DIR / "seed_index.npy"
 
@@ -101,10 +101,9 @@ def _full_index():
     ids = np.load(ids_path) if ids_path.exists() else np.arange(emb.shape[0])
     meta = {}
     for p in sorted(INDEX_DIR.glob("*metadata*.json")):
-        meta = {str(k): v for k, v in json.loads(p.read_text()).items()}
+        meta = json.loads(p.read_text())
         break
-    recipes = [meta.get(str(int(i)), {}) for i in ids]
-    return emb, recipes
+    return emb, ids, meta
 
 
 @lru_cache(maxsize=1)
@@ -115,7 +114,7 @@ def _index():
 
     recipes = json.loads(SEED_RECIPES.read_text())
     if SEED_CACHE.exists() and SEED_CACHE.stat().st_mtime >= SEED_RECIPES.stat().st_mtime:
-        return np.load(SEED_CACHE), recipes
+        return np.load(SEED_CACHE), None, recipes
 
     device, model, preprocess, _, txt_ad, ctx = _load()
     texts = [_build_text(r["title"], r["ingredients"], r.get("instructions", "")) for r in recipes]
@@ -124,7 +123,7 @@ def _index():
         emb = F.normalize(txt_ad(feats), dim=-1).cpu().numpy().astype("float32")
     INDEX_DIR.mkdir(parents=True, exist_ok=True)
     np.save(SEED_CACHE, emb)
-    return emb, recipes
+    return emb, None, recipes
 
 
 def _norm_ingredients(ing):
@@ -140,7 +139,7 @@ def retrieve(image_bytes, k=3):
     if not CHECKPOINT.exists():
         raise FileNotFoundError(f"no checkpoint at {CHECKPOINT}")
     device, model, preprocess, img_ad, _, _ = _load()
-    emb, recipes = _index()
+    emb, ids, meta = _index()
 
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     with torch.no_grad():
@@ -152,7 +151,11 @@ def retrieve(image_bytes, k=3):
     top = np.argsort(scores)[::-1][:k]
     out = []
     for idx in top:
-        r = recipes[int(idx)]
+        if ids is None:
+            r = meta[int(idx)]
+        else:
+            recipe_id = ids[int(idx)]
+            r = meta.get(str(int(recipe_id)), {})
         out.append({
             "recipe_name": r.get("title") or r.get("name") or "unknown",
             "ingredients": _norm_ingredients(r.get("ingredients", [])),
